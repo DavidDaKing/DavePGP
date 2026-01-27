@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys 
 import time
 import os
@@ -14,14 +15,23 @@ import gnupg
 
     *** MODIFICATION HISTORY *** 
     Initial Implementation - DAB 01/26/2026 
+
 """
+
+# PASS IN USERS STORED GNUPG HOME 
+
+path = input("Please enter the path to your .gnupg file \n" \
+"EX: /home/$USER/.gnupg \n")
+
+
 
 # Generate Keys
 
 def generate_key():
     # home file 
     # PLEASE CHANGE PARAMETERS
-    gpg=gnupg.GPG(gnupghome='/home/$$CHANGEME$$/.gnupg')
+
+    gpg=gnupg.GPG(gnupghome=path)
 
     gpg.encoding = 'utf-8'
 
