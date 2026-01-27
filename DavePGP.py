@@ -3,6 +3,9 @@ import sys
 import time
 import os
 import gnupg
+import argparse
+import subprocess
+import textwrap
 
 
 """
@@ -18,34 +21,68 @@ import gnupg
 
 """
 
+# TEST 
+APP_HOME = Path.home() / ".gnupg"
+GNUPG_HOME = APP_HOME / "gnupg"
+
+
+
 # PASS IN USERS STORED GNUPG HOME 
 
-path = input("Please enter the path to your .gnupg file \n" \
-"EX: /home/$USER/.gnupg \n")
+#path = input("Please enter the path to your .gnupg file \n" \
+#"EX: /home/$USER/.gnupg \n")
 
 
+# List current Keys (public, secret)
+
+def list_pub_key(_):
+    p = run_gpg(["--list-keys"], check=False)
+    if p.returncode != 0 and "No public key" in p.stderr:
+        print("[i] No keys yet.")
+        return
+    print(p.stdout.strip() or p.stderr.strip())
+
+def list_sec_key(_):
+    p = run_gpg(["--list-secret-keys"], check=False)
+    if p.returncode != 0 and "No secret key" in p.stderr:
+        print("[i] No secret keys yet.")
+        return
+    print(p.stdout.strip() or p.stderr.strip())
 
 # Generate Keys
+    # - Generate key directory
+    # - Generate the key ring 
 
-def generate_key():
+def generate_dir():
     # home file 
     # PLEASE CHANGE PARAMETERS
 
-    gpg=gnupg.GPG(gnupghome=path)
+    GNUPG_HOME.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(GNUPG_HOME, 0o700)
+    except PermissionError:
+        pass
 
-    gpg.encoding = 'utf-8'
+    print(f"[+] Initialized app keyring at: {GNUPG_HOME}")
 
-    # I will never store real credentials.
-    input_data = gpg.gen_key_input(
-        name_email = 'alice@fakemail.com',
-        passphrase = 'testphrase',
-        key_type = 'RSA',
-        key_length = 1024
-    )
+def generate_ring(args):
+    params = textwrap.dedent(f"""
+            %echo generating key
+            Key-Type: RSA
+            Key-Length: 3072
+            Subkey-Type: RSA
+            Subkey-Length: 3072
+            Name-Real: {args.name}
+            Expire-Date: {args.expire}
+            Passphrase: {args.passphrase}
+            %commit
+            %echo done
+         """)
+    
+    p = run_gpg(["--pinentry-mode", "loopback", "--gen-key"], input_text=params)
+    print("[+] Key generated.")
 
-    key = gpg.gen_key(input_data)
-
-    print(key)
+    list_sec_key(args)
 
 # Encrypt with our public key
 
@@ -56,6 +93,27 @@ def generate_key():
 # Sign a document 
 
 # Verify a signature
+
+
+# Run the gpg command as a subprocess 
+def run_gpg(args, input_text=None, check=True):
+
+    env = os.environ.copy()
+    env["GNUPGHOME"] = str(GNUPG_HOME)
+
+    GNUPG_HOME.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(GNUPG_HOME, 0o700)
+    except PermissionError:
+        pass
+    
+    cmd = ["gpg", "--batch", "--yes"] + args
+    p = subprocess.run(cmd, input=input_text, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+    if check and p.returncode != 0:
+        raise RuntimeError(f"gpg failed: {p.stderr.strip()}")
+    
+    return p
 
 
 def davehat_banner():
@@ -72,30 +130,43 @@ def davehat_banner():
     print(banner)
 
 
+# Parse the user command 
 
+def build_parser():
+    parser = argparse.ArgumentParser(prog="dave-pgp", description="This is my command line interface for PGP encryption and decryption")
+
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_init = sub.add_parser("init", help="Initialize app keyring directory")
+    p_init.set_defaults(func=generate_dir())
+
+    p_list = sub.add_parse("list", help="List public keys in app ring")
+    p_list.set_defaults(func=list_pub_key())
+
+    p_listsec = sub.add_parse("list-secret", help="List secret keys in app ring")
+    p_listsec.set_defaults(func=list_sec_key())
+
+    
+
+
+
+    return parser
 
 
 def main():
     davehat_banner()
 
-    ## TAKE IN USER INPUIT 
-    if len(sys.argv) == 1:
-        print("Useage:\n")
-        print("python3 DavePGP.py <command>")
-        # Commands associated with python PGP libraries 
-        print("\nCommands:")
-        print(" key-gen  :  Generates your own keys!")
-        sys.exit(0)
-        
 
-    cmd = sys.argv[1]
+    # USE THE PARSER 
+    parser = build_parser()
 
-    if cmd == "banner":
-        davehat_banner()
-    elif cmd == "key-gen":
-        generate_key()
-    else: 
-        print(f"[!] Command '{cmd}' Unknown.")
+    args = parser.parse_args()
+
+    try:
+        args.func(args)
+    except Exception as e:
+        print(f"[!] Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 
