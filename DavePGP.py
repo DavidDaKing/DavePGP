@@ -13,7 +13,7 @@ import textwrap
     David Bower
 
     *** PURPOSE ***
-    This tool is supposed to enage in secure communication --> Strictly 4 My H.O.M.I.E.Z
+    This tool is supposed to enage in secure communication
         - encrpyt and sign documents with PGP in python 
 
     *** MODIFICATION HISTORY *** 

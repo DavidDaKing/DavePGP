@@ -1,0 +1,22 @@
+Pretty Good Privacy Fundamentals : Keep your messages a secret.
+
+This document serves the purpose of understanding conceptually PKIs based on PGP. 
+
+It's important to have a good understanding of a Public Key Infastructure if I want to build one for my homies and I to use. I figured the best
+way to do it is through implementing a PKI through Pretty Good Privacy. 
+
+What I like about PGP: 
+    - Each user manages their own digital certificates 
+    - PGP was designed for users to take privacy in their own hands. 
+
+How PGP Certificates work: 
+    - Alice is the issuer
+    - Alice's public key is the subject
+    - Certificates are self-signed, can be signed by multiple people 
+
+How validation works in PGP (Integrity):
+    - We verify our public keys to each other. If the public key isn't compromised,
+    our values of the key should match. 
+    - Another example of validation would be an example of homie A, B, and C. 
+    homie A sent homie B his public key. Homie B sends homie C the certificate of A signed w/ homie B's certificate.
+    if homie C trusts B, then A is validated to C.  
