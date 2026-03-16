@@ -1,1 +1,4 @@
 .gnupg
+/textfiles
+alice_pub_key.asc
+bob_pub_key.asc
