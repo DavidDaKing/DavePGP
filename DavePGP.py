@@ -146,10 +146,6 @@ def build_parser():
     p_listsec = sub.add_parse("list-secret", help="List secret keys in app ring")
     p_listsec.set_defaults(func=list_sec_key())
 
-    
-
-
-
     return parser
 
 
